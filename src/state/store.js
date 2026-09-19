@@ -4,6 +4,7 @@
 // the agent logic above it.
 const fs = require("fs");
 const path = require("path");
+const { normalizePhone } = require("./phone");
 
 const STATE_FILE = path.join(__dirname, "..", "..", "data", "state.json");
 
@@ -22,14 +23,15 @@ function save(state) {
 
 function getLead(phone) {
   const state = load();
-  return state.leads[phone];
+  return state.leads[normalizePhone(phone)];
 }
 
 function upsertLead(phone, patch) {
+  const key = normalizePhone(phone);
   const state = load();
-  state.leads[phone] = { ...(state.leads[phone] || {}), ...patch, phone };
+  state.leads[key] = { ...(state.leads[key] || {}), ...patch, phone: key };
   save(state);
-  return state.leads[phone];
+  return state.leads[key];
 }
 
 function logEvent(event) {
