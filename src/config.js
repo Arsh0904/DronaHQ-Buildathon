@@ -14,6 +14,17 @@ const config = {
     smsFrom: process.env.TWILIO_SMS_FROM_NUMBER || "",
   },
 
+  sms: {
+    // "twilio" | "textbelt" | "mock" (default). Lets SMS work for free via
+    // Textbelt's no-signup demo key without ever needing a purchased number.
+    provider: (process.env.SMS_PROVIDER || "mock").toLowerCase(),
+  },
+
+  textbelt: {
+    apiKey: process.env.TEXTBELT_API_KEY || "textbelt",
+    apiUrl: process.env.TEXTBELT_API_URL || "https://textbelt.com/text",
+  },
+
   dronahq: {
     apiKey: process.env.DRONAHQ_API_KEY || "",
     apiHost: (process.env.DRONAHQ_API_HOST || "").replace(/\/$/, ""),
