@@ -25,6 +25,21 @@ const config = {
     apiUrl: process.env.TEXTBELT_API_URL || "https://textbelt.com/text",
   },
 
+  email: {
+    // "gmail" | "resend" | "mock" (default). Free real-email send without
+    // touching the leads' inboxes until you're ready.
+    provider: (process.env.EMAIL_PROVIDER || "mock").toLowerCase(),
+    gmail: {
+      user: process.env.GMAIL_USER || "",
+      appPassword: process.env.GMAIL_APP_PASSWORD || "",
+    },
+    resend: {
+      apiKey: process.env.RESEND_API_KEY || "",
+      from: process.env.RESEND_FROM || "onboarding@resend.dev",
+      apiUrl: process.env.RESEND_API_URL || "https://api.resend.com/emails",
+    },
+  },
+
   dronahq: {
     apiKey: process.env.DRONAHQ_API_KEY || "",
     apiHost: (process.env.DRONAHQ_API_HOST || "").replace(/\/$/, ""),
@@ -52,5 +67,8 @@ config.dronahq.voiceIsLive = isConfigured(config.dronahq.apiKey) &&
 
 config.dronahq.conversationIsLive = isConfigured(config.dronahq.conversationWebhookUrl) &&
   isConfigured(config.dronahq.conversationWebhookApiKey);
+
+config.email.gmail.isLive = isConfigured(config.email.gmail.user) && isConfigured(config.email.gmail.appPassword);
+config.email.resend.isLive = isConfigured(config.email.resend.apiKey);
 
 module.exports = config;
