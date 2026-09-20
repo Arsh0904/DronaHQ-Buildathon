@@ -90,35 +90,41 @@ async function invokeConversationAgent(payload) {
  * exactly), this is a no-op; otherwise it digs the JSON out of `response`
  * (or `message`) so callers can rely on decision.message/action/etc.
  */
+const GENERIC_ENVELOPE_RE = /^Agent run completed successfully\.?/i;
+
 function extractStructuredDecision(data) {
-  if (data && typeof data.action === "string" && typeof data.message === "string" && data.message !== "Agent run completed successfully. See 'response' for execution output.") {
+  const isGenericEnvelopeMessage = typeof data?.message === "string" && GENERIC_ENVELOPE_RE.test(data.message);
+  if (data && typeof data.action === "string" && typeof data.message === "string" && !isGenericEnvelopeMessage) {
     return {};
   }
-  const raw = (data && (data.response || data.message)) || "";
-  if (typeof raw !== "string") return {};
 
-  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidate = fenceMatch ? fenceMatch[1] : raw;
-  try {
-    const parsed = JSON.parse(candidate.trim());
-    if (parsed && typeof parsed === "object") {
-      return {
-        message: parsed.message || raw,
-        action: parsed.action,
-        reason: parsed.reason,
-        lead_status: parsed.lead_status,
-      };
+  const raw = data && typeof data.response === "string" ? data.response : "";
+  if (raw) {
+    const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+    const candidate = fenceMatch ? fenceMatch[1] : raw;
+    try {
+      const parsed = JSON.parse(candidate.trim());
+      if (parsed && typeof parsed === "object") {
+        return {
+          message: parsed.message || raw,
+          action: parsed.action,
+          reason: parsed.reason,
+          lead_status: parsed.lead_status,
+        };
+      }
+    } catch (err) {
+      // Not JSON (or not cleanly fenced): treat the whole free-text
+      // response as the message - it's still real agent-authored content.
+      return { message: raw, action: "send" };
     }
-  } catch (err) {
-    // Not JSON (or not cleanly fenced) - fall through to raw text below.
   }
-  // No parseable JSON found: treat the whole free-text response as the
-  // message so at least something sensible gets sent, defaulting to a
-  // safe non-destructive action.
-  if (raw && raw !== "Agent run completed successfully. See \'response\' for execution output.") {
-    return { message: raw, action: "send" };
-  }
-  return {};
+
+  // No usable `response` text at all (DronaHQ returned only the generic
+  // "Agent run completed..." envelope with response: null - this happens
+  // when the run hadn't finished writing its output yet). We have no real
+  // content to send, so do NOT fabricate an action - surface it as a
+  // clear non-send outcome instead of pushing boilerplate text to a lead.
+  return { action: undefined, reason: "dronahq_run_had_no_response_text" };
 }
 
 module.exports = { dispatchVoiceCalls, getDispatchStatus, invokeConversationAgent };
