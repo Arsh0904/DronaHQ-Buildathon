@@ -4,6 +4,7 @@ const morgan = require("morgan");
 const config = require("./config");
 const campaignsRouter = require("./routes/campaigns");
 const webhooksRouter = require("./routes/webhooks");
+const icpsRouter = require("./routes/icps");
 
 const app = express();
 app.use(morgan("dev"));
@@ -16,10 +17,12 @@ app.get("/", (req, res) => {
     twilio_live: config.twilio.isLive,
     dronahq_voice_live: config.dronahq.voiceIsLive,
     dronahq_conversation_live: config.dronahq.conversationIsLive,
+    apollo_live: config.apollo.isLive,
   });
 });
 
 app.use("/api/campaigns", campaignsRouter);
+app.use("/api/icps", icpsRouter);
 app.use("/webhooks", webhooksRouter);
 
 app.listen(config.port, () => {

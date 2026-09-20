@@ -1,0 +1,49 @@
+{
+  "us_saas_cto": {
+    "icp_id": "us_saas_cto",
+    "name": "US SaaS CTO outreach",
+    "description": "CTOs at US-based SaaS companies",
+    "source": "apollo",
+    "total_market_size": 16761,
+    "prospects": [
+      { "name": "Charles Buck", "title": "Chief Technology Officer", "linkedin_url": "http://www.linkedin.com/in/chipbuck", "apollo_url": "https://app.apollo.io/#/people/61114aaa9be83300017bf04e" },
+      { "name": "Rex Hale", "title": "Chief Technology Officer", "linkedin_url": "http://www.linkedin.com/in/rexhale", "apollo_url": "https://app.apollo.io/#/people/54c1890f7468691639aa041d" },
+      { "name": "David P", "title": "Chief Technology Officer", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/66f6690a9bd68a0001a5518e" },
+      { "name": "Devin W", "title": "Chief Technology Officer", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/66fa874cf9bde30001f2293b" },
+      { "name": "Kushagra Singh", "title": "Chief Technology Officer", "linkedin_url": "http://www.linkedin.com/in/kushagra-singh-771126b2", "apollo_url": "https://app.apollo.io/#/people/5d633358f65125d245ad43bc" }
+    ]
+  },
+  "india_bfsi_cio": {
+    "icp_id": "india_bfsi_cio",
+    "name": "India BFSI CIO outreach",
+    "description": "CIOs at banking, insurance, NBFC, asset management and fintech companies in India",
+    "source": "apollo",
+    "total_market_size": 627,
+    "prospects": [
+      { "name": "Sunil Yadav", "title": "Chief Information Officer (CIO)", "company": "Satin Creditcare Network", "segment": "NBFC", "linkedin_url": "http://www.linkedin.com/in/sunil-yadav-300b0a56", "apollo_url": "https://app.apollo.io/#/people/659b93cd0148d30001ab27a0" },
+      { "name": "Abhijeet Bhattacharjee", "title": "Chief Information Officer (CIO)", "company": "Utkarsh Small Finance Bank", "segment": "Banking", "linkedin_url": "http://www.linkedin.com/in/abhijeet-bhattacharjee-b28bb44", "apollo_url": "https://app.apollo.io/#/people/66f11e5ff34c5e00019c43ba" },
+      { "name": "Smruti Mohanty", "title": "Chief Information Officer (CIO)", "company": "RBL Finserve Limited", "segment": "Banking/NBFC", "linkedin_url": "http://www.linkedin.com/in/smruti-mohanty-95b71123", "apollo_url": "https://app.apollo.io/#/people/684964d54a4dde0001466b2e" },
+      { "name": "Dheepak Rajoo", "title": "Chief Information Officer", "company": "Royal Sundaram General Insurance", "segment": "Insurance", "linkedin_url": "http://www.linkedin.com/in/dheepakrajoo", "apollo_url": "https://app.apollo.io/#/people/66f0f5bf045ecb0001132e7d" },
+      { "name": "Sanjay Mahajan", "title": "Chief Information Officer", "company": "Fusion Finance Ltd", "segment": "NBFC", "linkedin_url": "http://www.linkedin.com/in/sanjay-mahajan-3378232", "apollo_url": "https://app.apollo.io/#/people/6110a0516ad23d000129b538" },
+      { "name": "Mahesh Ramamoorthy", "title": "CIO", "company": "YES BANK", "segment": "Banking", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/686fe36a4eff770001ab362b" },
+      { "name": "Rajesh Choudhary", "title": "Chief Information Officer", "company": "CSB Bank", "segment": "Banking", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/66f13c6fc258bb0001e03352" },
+      { "name": "Nagarajan Chandran", "title": "Chief Information Officer", "company": "Mahindra Finance", "segment": "NBFC", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/66f6532fc1d7ed000104d289" },
+      { "name": "Prashant Chauhan", "title": "Chief Information Officer", "company": "Tata Capital", "segment": "NBFC", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/5ac9614ba6da9840f6309a7f" },
+      { "name": "Praveen Kalwagadda", "title": "Chief Information Officer", "company": "ToneTag", "segment": "Fintech", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/55714d3c73696458a42b5a00" }
+    ]
+  },
+  "us_voice_ai_founders": {
+    "icp_id": "us_voice_ai_founders",
+    "name": "US Voice AI founders",
+    "description": "Founders/co-founders at US companies working on voice AI, speech AI, or conversational AI",
+    "source": "apollo",
+    "total_market_size": 2777,
+    "prospects": [
+      { "name": "Eddy Su", "title": "Co-founder", "linkedin_url": "http://www.linkedin.com/in/phs26", "apollo_url": "https://app.apollo.io/#/people/66ebec4f718d3e000173fe61" },
+      { "name": "Tomer C", "title": "Co-founder", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/67cce0896704340001eff38e" },
+      { "name": "Ben W", "title": "Co-Founder", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/66f824dca8551a00013a2354" },
+      { "name": "Monil Dawda", "title": "Co-Founder", "linkedin_url": "http://www.linkedin.com/in/monil-dawda", "apollo_url": "https://app.apollo.io/#/people/5f0ad3deb3ed310001baeba6" },
+      { "name": "Sharath N", "title": "Co-Founder", "linkedin_url": null, "apollo_url": "https://app.apollo.io/#/people/687e1202ba7fab000113983e" }
+    ]
+  }
+}

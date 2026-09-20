@@ -55,8 +55,8 @@ async function invokeConversationAgent(payload) {
     return {
       mock: true,
       message: isReply
-        ? `Thanks for the reply, ${payload.lead.name.split(" ")[0]}! (mock follow-up message)`
-        : `Hi ${payload.lead.name.split(" ")[0]}, this is a mock opening message about ${payload.campaign.objective}.`,
+        ? `Thanks for the reply, ${(payload.lead.name || "there").split(" ")[0]}! (mock follow-up message)`
+        : `Hi ${(payload.lead.name || "there").split(" ")[0]}, this is a mock opening message about ${payload.campaign.objective}.`,
       action: "send",
       reason: "mock mode - no DronaHQ conversation webhook configured yet",
       lead_status: isReply ? "engaged" : "new",

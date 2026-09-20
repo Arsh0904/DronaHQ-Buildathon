@@ -40,6 +40,27 @@ function logEvent(event) {
   save(state);
 }
 
+
+function identityKey(lead) {
+  if (lead.phone) return normalizePhone(lead.phone);
+  if (lead.email) return `email:${String(lead.email).toLowerCase().trim()}`;
+  if (lead.linkedin_url) return `li:${String(lead.linkedin_url).toLowerCase().trim()}`;
+  throw new Error("Lead has no phone, email, or linkedin_url to key on");
+}
+
+function getLeadByIdentity(lead) {
+  const state = load();
+  return state.leads[identityKey(lead)];
+}
+
+function upsertLeadByIdentity(lead, patch) {
+  const key = identityKey(lead);
+  const state = load();
+  state.leads[key] = { ...(state.leads[key] || {}), ...lead, ...patch, _key: key };
+  save(state);
+  return state.leads[key];
+}
+
 function allLeads() {
   return Object.values(load().leads);
 }
@@ -48,4 +69,4 @@ function allEvents() {
   return load().events;
 }
 
-module.exports = { getLead, upsertLead, logEvent, allLeads, allEvents };
+module.exports = { getLead, upsertLead, logEvent, allLeads, allEvents, getLeadByIdentity, upsertLeadByIdentity, identityKey };

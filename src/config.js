@@ -40,6 +40,10 @@ const config = {
     },
   },
 
+  apollo: {
+    apiKey: process.env.APOLLO_API_KEY || "",
+  },
+
   dronahq: {
     apiKey: process.env.DRONAHQ_API_KEY || "",
     apiHost: (process.env.DRONAHQ_API_HOST || "").replace(/\/$/, ""),
@@ -56,6 +60,8 @@ const config = {
 function isConfigured(value) {
   return Boolean(value) && !/REPLACE_ME|REPLACEME/i.test(value);
 }
+
+config.apollo.isLive = isConfigured(config.apollo.apiKey);
 
 config.twilio.isLive = isConfigured(config.twilio.accountSid) &&
   isConfigured(config.twilio.authToken) &&
