@@ -1,249 +1,208 @@
-# SDR Voice + SMS Agent (DronaHQ + Twilio)
+# Autonomous SDR — Control Plane + Intelligence Layer
 
-This is the **Voice SDR Agent** and **Conversation/SMS Agent** channel for the
-Inter Guild Buildathon 2026 "Autonomous SDR" build. It is a standalone
-service, meant to plug into the team's main control plane as one of its
-outreach channels (alongside LinkedIn and email).
+Built for the **Inter Guild Buildathon 2026** (IIT Madras × DronaHQ).
 
-## What this is
+Live: **https://sdr-buildathon.onrender.com**
+Repo: **https://github.com/Arsh0904/DronaHQ-Buildathon**
 
-- **Voice SDR Agent**: dispatches outbound calls through a DronaHQ Voice
-  Agent (DronaHQ handles the live conversation — qualifying, objection
-  handling, escalation — per the agent's instructions configured in Studio).
-  This service's job is orchestration: which leads to call, in what batch,
-  with what per-call context, and recording the outcome.
-- **Conversation Agent (SMS)**: sends the opening SMS via Twilio, and for
-  every reply, asks a DronaHQ Agent (via its Webhook Trigger) what to say
-  next and what to do (keep going / escalate to a human / stop / the lead
-  wants a meeting).
+A multi-campaign, multi-channel autonomous SDR: a **control plane** for
+managing several concurrent GTM campaigns (each with its own ICP, prompts,
+lifecycle and pause controls) sitting on top of an **intelligence layer** of
+seven cooperating agents that qualify, research, plan outreach for,
+personalise messages to, converse with, call, and follow up on prospects —
+across SMS, voice, email and LinkedIn.
 
-DronaHQ is the decision-making brain for both channels. Twilio is the
-telephony/SMS carrier. This service is the custom-engineered glue that
-connects a dataset of leads to both of those, tracks state, and exposes
-webhooks so the two systems can talk to each other and to this service.
+See `REPORT.md` for the full write-up (approach, architecture, what's fully
+working vs partial vs skipped, and known limitations).
+
+## What's actually running
+
+Open the live URL and you'll see the real dashboard, not a mockup:
+
+- **4 concurrent campaigns**, independently controllable — 3 `live`/`paused`,
+  1 `draft` — each targeting a different ICP (US SaaS CTOs, India BFSI CIOs,
+  US Voice-AI founders, plus a draft "Enterprise Expansion" pilot).
+- **Global kill switch** and **per-channel pause** (sms/voice/email/linkedin)
+  in the header, enforced by the pipeline on every run — not just a UI toggle.
+- Per-campaign **Pause / Resume / Mark Completed / Archive / Duplicate as
+  Variant**, a full lifecycle history log, and a live prospect funnel
+  (discovered → researched → qualified/disqualified → contacted → engaged →
+  meeting → opportunity).
+- **Versioned, roll-back-able prompts** per campaign — a system prompt plus
+  one prompt per agent — editable and revertible from the "Prompts &
+  Harness" tab.
+- An **"Add Prospect"** flow that runs the real ICP Fitment agent live in
+  front of you (try a demo lead that doesn't fit a campaign's target roles —
+  it gets disqualified for a real, inspectable reason, not a canned one).
+- Every prospect is tagged by where it came from: `apollo` (real, sourced via
+  Apollo.io and frozen into the repo as a seed dataset), `synthetic_test`
+  (fake contacts with real-looking phone/email so SMS/voice/email have
+  something safe to send to), or `manual` (added live through the UI).
 
 ## Architecture
 
 ```
-                    ┌─────────────────────────┐
-   dummy_leads.csv  │                         │
-   (or control-plane│   sdr-voice-sms-agent   │
-    API later)  ───▶│   (this service)        │
-                    │                         │
-                    └───────┬─────────┬───────┘
-                            │         │
-              dispatch call │         │ send SMS / read reply
-                            ▼         ▼
-                 ┌────────────────┐ ┌──────────┐
-                 │ DronaHQ Voice  │ │  Twilio  │
-                 │ Agent (SIP     │ │  SMS API │
-                 │ trunk → Twilio)│ │          │
-                 └───────┬────────┘ └────┬─────┘
-                         │ pre/post-call  │ inbound SMS webhook
-                         │ webhooks       │
-                         ▼                ▼
-                 ┌─────────────────────────────┐
-                 │  this service's /webhooks    │
-                 │  routes -> update state.json │
-                 └──────────────┬──────────────┘
-                                │
-                                ▼
-                 for each reply: POST to a DronaHQ
-                 "Conversation Agent" Webhook Trigger
-                 -> { message, action, lead_status }
+                          ┌───────────────────────────────┐
+                          │        Control Plane           │
+                          │  (public/, src/routes/*.js)     │
+                          │                                 │
+                          │  campaigns · lifecycle state    │
+                          │  versioned prompts · reps       │
+                          │  kill switch · channel pause     │
+                          └───────────────┬─────────────────┘
+                                          │ enrolls prospects,
+                                          │ runs the pipeline
+                                          ▼
+                          ┌───────────────────────────────┐
+                          │      Intelligence Layer         │
+                          │      (src/agents/pipeline.js)   │
+                          │                                 │
+                          │  1. ICP Fitment                 │
+                          │  2. Lead Research & Enrichment  │
+                          │  3. Outreach Strategy           │
+                          │  4. Personalisation  ──┐         │
+                          │  5. Conversation       │         │
+                          │  6. Voice SDR          │ RAG:    │
+                          │  7. Follow-up          │ src/    │
+                          │                        │ knowledge│
+                          └───────────┬────────────┴─────────┘
+                                      │ fan-out per prospect,
+                                      │ per campaign's enabled channels
+                        ┌─────────────┼─────────────┬─────────────┐
+                        ▼             ▼             ▼             ▼
+                   ┌────────┐   ┌──────────┐   ┌────────┐   ┌──────────┐
+                   │  SMS   │   │  Voice   │   │ Email  │   │ LinkedIn │
+                   │ Twilio │   │ DronaHQ  │   │ Resend │   │ deep-link│
+                   │        │   │  Voice   │   │        │   │ (human-  │
+                   │        │   │  Agent   │   │        │   │ in-loop) │
+                   └────────┘   └──────────┘   └────────┘   └──────────┘
 ```
 
-## Why it's built this way (per the buildathon rubric)
-
-- DronaHQ is genuinely load-bearing: it makes every voice-conversation and
-  reply-handling decision. This service does not generate sales messages
-  itself — it always asks DronaHQ's agents.
-- The engineering underneath DronaHQ (this repo) is real, custom code:
-  the campaign loop, the lead store, the webhook wiring between Twilio and
-  DronaHQ, and mock-mode fallbacks for safe testing.
-- It's designed to be called by (or plug into) the team's control plane as
-  one channel of the multi-channel SDR, not a standalone demo.
+**How DronaHQ is used:** the Conversation Agent decides what to do with an
+inbound SMS reply (send / escalate / stop / book a meeting) via a Webhook
+Trigger, and the Voice Agent runs the actual outbound call once dispatched.
+Both are genuinely load-bearing — this service does not write sales replies
+itself when DronaHQ is live. When DronaHQ's response envelope comes back
+empty (a known gap under real network conditions), the **Personalisation
+agent** falls back to a locally-generated, knowledge-grounded template so a
+demo run never silently stalls — every message is tagged with its real
+`source` (`dronahq_conversation_agent` vs `template_fallback`) so nothing is
+misrepresented as more "AI-generated" than it is.
 
 ## Setup
 
-### 1. Install dependencies
-
-Run this yourself in a normal PowerShell window (this project was scaffolded
-through a bridged filesystem that can't reliably run `npm install` itself):
-
 ```powershell
 cd C:\Users\ADMIN\Documents\sdr-buildathon
-# if a node_modules folder already exists from a failed attempt, remove it first:
-Remove-Item -Recurse -Force node_modules -ErrorAction SilentlyContinue
 npm install
+Copy-Item .env.example .env
 ```
 
-### 2. Configure environment
+Everything runs in **mock mode** with the placeholder `.env` values —
+nothing real gets sent/called until you fill in live credentials. See
+`.env.example` for every variable (Twilio, DronaHQ Voice + Conversation
+webhook, SMS/email provider choice).
+
+## Run it
 
 ```powershell
-Copy-Item .env.example .env
-notepad .env
+npm start          # starts the server; auto-seeds demo campaigns if data/state.json is empty
 ```
 
-Fill in real values as you get them (see "Getting DronaHQ credentials"
-below). Everything works in **mock mode** with the placeholders left as-is
-— nothing real gets sent or called until you fill in real credentials.
+Open `http://localhost:3000` for the dashboard. To force a fresh reset of
+the demo data at any time:
 
-### 3. Getting DronaHQ credentials
+```powershell
+npm run seed
+```
 
-1. Sign up / log in at https://agents.dronahq.com/
-2. **Voice Agent**: create a Voice Agent, write its system prompt/instructions
-   (qualify the lead, handle objections, offer to book a demo, escalate to a
-   human if asked), and connect a phone number via SIP trunking to your
-   Twilio number — Voice Agent → SIP Trunks → Add SIP Trunk (needs a Twilio
-   Elastic SIP Trunk with a credential list; see Twilio Console → Elastic SIP
-   Trunking). Publish the agent and copy its **Agent ID**.
-3. Under the Voice Agent's **Webhooks**, set:
-   - Pre-webhook (GET): `{PUBLIC_BASE_URL}/webhooks/dronahq/precall`
-   - Post-webhook (POST): `{PUBLIC_BASE_URL}/webhooks/dronahq/postcall`
-4. **Conversation Agent**: create a plain Agent whose job is "given a lead's
-   context and their SMS reply (or blank for the first message), decide the
-   next SMS to send and what to do." Add a **Webhook Trigger** to it, set its
-   response type to Standard with this JSON Schema:
-   ```json
-   {
-     "type": "object",
-     "properties": {
-       "message": { "type": "string" },
-       "action": { "type": "string", "enum": ["send", "escalate", "stop", "book_meeting"] },
-       "reason": { "type": "string" },
-       "lead_status": { "type": "string" }
-     },
-     "required": ["message", "action", "lead_status"]
-   }
-   ```
-   Copy the generated webhook URL and its api-key.
-5. Go to **Developer → API Keys**, create a key scoped to Voice Agent (and
-   Agent, if separate), and note your account's API host shown there.
-6. Paste all of the above into `.env`.
-
-### 4. Twilio
-
-You already have a Twilio trial account. Get, from the Twilio Console:
-`Account SID`, `Auth Token`, and your trial phone number. Put them in `.env`.
-Trial accounts can generally only message/call numbers you've verified in
-the console — verify your own phone there for real testing.
-
-## Testing — do this in order
-
-### A. Mock mode (no credentials needed) — do this first
-
-This proves the whole pipeline works before anything touches a real phone.
+Useful direct-agent test scripts (bypass the HTTP layer, exercise
+Twilio/DronaHQ/email clients directly):
 
 ```powershell
 npm run test:sms
 npm run test:voice
+npm run test:email
 ```
 
-You should see `[MOCK]` log lines showing what would be sent/dialed for the
-first 3 dummy leads, and `data\state.json` will appear with their saved
-state. Open it and confirm each lead has a `sms_status` / `voice_status`
-and a decision from the (mocked) DronaHQ agent.
+### Deploying
 
-### B. Run the server and hit it like the control plane would
-
-```powershell
-npm start
-```
-
-In another PowerShell window:
-
-```powershell
-# trigger SMS outreach for the whole dummy dataset
-curl -X POST http://localhost:3000/api/campaigns/demo/sms/start
-
-# trigger voice outreach for the whole dummy dataset
-curl -X POST http://localhost:3000/api/campaigns/demo/voice/start
-
-# check status
-curl http://localhost:3000/api/campaigns/demo/status
-curl http://localhost:3000/api/campaigns/demo/events
-```
-
-Still mock mode if you haven't filled in `.env` — safe to run repeatedly.
-
-### C. Expose it publicly (needed for real Twilio/DronaHQ webhooks)
-
-Twilio and DronaHQ both need to reach back into this service over the
-internet, so during real testing run a tunnel:
-
-```powershell
-npx ngrok http 3000
-```
-
-Copy the `https://....ngrok-free.app` URL into `.env` as `PUBLIC_BASE_URL`,
-and use `{that url}/webhooks/twilio/sms` etc. when configuring Twilio/DronaHQ
-webhook fields (see setup steps above).
-
-### D. Real SMS test (one real number first)
-
-1. Fill in real Twilio credentials in `.env`.
-2. Edit `data/dummy_leads.csv` and replace ONE row's phone number with your
-   own verified number, keep the rest as dummy/mock.
-3. In Twilio Console, set your number's inbound SMS webhook to
-   `{PUBLIC_BASE_URL}/webhooks/twilio/sms`.
-4. Restart the server (`npm start`), then:
-   ```powershell
-   curl -X POST http://localhost:3000/api/campaigns/demo/sms/start
-   ```
-5. You should receive a real text. Reply to it from your phone — the reply
-   should hit `/webhooks/twilio/sms`, get sent to the DronaHQ conversation
-   agent (mock or real depending on `.env`), and you should receive a
-   follow-up text.
-
-### E. Real voice test (one real number first)
-
-1. Fill in real DronaHQ voice credentials + finish the SIP trunk/Twilio
-   number setup in DronaHQ Studio (Setup step 3 above).
-2. Same as above — put your own verified number in one CSV row.
-3. ```powershell
-   curl -X POST http://localhost:3000/api/campaigns/demo/voice/start
-   ```
-4. You should receive a real call from your DronaHQ Voice Agent. After it
-   ends, check `data/state.json` — the lead's `voice_status` should be
-   `completed` with an outcome/transcript from the post-call webhook.
+`render.yaml` is a Render Blueprint — connect the repo and Render will build
+and run `npm start`. **Render's free tier wipes the filesystem on every
+redeploy**, which is why the server auto-seeds `data/state.json` with the
+full demo dataset (4 campaigns, real + synthetic prospects, a pipeline
+already run against them) on boot if it finds no campaigns — a fresh deploy
+is never an empty app.
 
 ## Folder structure
 
 ```
 sdr-buildathon/
 ├── src/
-│   ├── config.js          # env loading + mock/live detection
-│   ├── server.js          # Express app entrypoint
+│   ├── server.js              # Express app entrypoint; serves public/, mounts routes, auto-seeds on boot
+│   ├── config.js              # env loading + mock/live detection per integration
+│   ├── campaigns/
+│   │   └── factory.js         # buildCampaign() — shared campaign-construction logic (routes + seeder)
 │   ├── agents/
-│   │   ├── voiceSdrAgent.js       # dispatch calls, pre/post-call context
-│   │   └── conversationAgent.js   # SMS opener + reply handling
-│   ├── dronahq/client.js  # DronaHQ Voice dispatch + Webhook Trigger calls
-│   ├── twilio/client.js   # Twilio SMS send
+│   │   ├── pipeline.js        # the intelligence layer: all 7 agents + enrollment/run orchestration
+│   │   ├── conversationAgent.js  # legacy: SMS opener + DronaHQ-driven reply handling
+│   │   └── voiceSdrAgent.js      # legacy: dispatch calls, pre/post-call context
+│   ├── knowledge/
+│   │   └── kb.js               # dependency-free keyword-retrieval "RAG" over data/knowledge/*.md
+│   ├── data/
+│   │   ├── defaultPrompts.js   # default system + per-agent prompt text for a new campaign
+│   │   ├── icpProspects.js     # loads the real Apollo-sourced prospect pools
+│   │   └── reservedDemoLeads.js # 4 synthetic leads for the live "Add Prospect" demo
 │   ├── routes/
-│   │   ├── campaigns.js   # POST .../sms/start, .../voice/start, status
-│   │   └── webhooks.js    # Twilio inbound SMS, DronaHQ pre/post-call
+│   │   ├── campaigns.js        # campaign CRUD, lifecycle transitions, prompts/versions, enrollments, run/follow-up
+│   │   ├── control.js          # kill switch, channel pause, reps, demo-lead list
+│   │   ├── icps.js             # ICP metadata
+│   │   └── webhooks.js         # Twilio inbound SMS, DronaHQ pre/post-call webhooks
+│   ├── bootstrap/
+│   │   └── seedDemoData.js     # builds the 4 demo campaigns; seedIfEmpty() called on server boot
+│   ├── dronahq/client.js       # DronaHQ Voice dispatch + Conversation Agent webhook calls
+│   ├── twilio/client.js        # Twilio SMS send
+│   ├── email/client.js         # Resend / Gmail SMTP send
+│   ├── linkedin/client.js      # assisted deep-link generation (human-in-the-loop, no automated login)
+│   ├── outreach/dispatcher.js  # per-channel send wrappers with error isolation
 │   └── state/
-│       ├── store.js       # JSON-file lead/event store (swap for real DB)
-│       └── leads.js       # CSV loader
+│       ├── store.js            # JSON-file store: campaigns, reps, settings, enrollments + legacy lead/event data
+│       ├── leads.js            # legacy CSV loader
+│       └── phone.js            # phone number normalization
 ├── data/
-│   ├── dummy_leads.csv    # synthetic test dataset
-│   └── state.json         # generated at runtime, gitignored
+│   ├── icp_prospects/prospects.json  # real Apollo-sourced prospects for the 3 seeded ICPs (20 total)
+│   ├── knowledge/*.md          # product pitch, objection handling, example messages, voice script — the RAG corpus
+│   ├── dummy_leads.csv         # legacy single-channel demo dataset
+│   └── state.json              # generated at runtime, gitignored
+├── public/                     # the control-plane dashboard: vanilla JS SPA, no build step
+│   ├── index.html
+│   ├── styles.css
+│   └── app.js
 ├── scripts/
-│   ├── testSms.js         # mock-safe end-to-end SMS test
-│   └── testVoice.js       # mock-safe end-to-end voice test
+│   ├── seed.js                 # `npm run seed` — force-reseed demo data
+│   ├── testSms.js / testVoice.js / testEmail.js   # mock-safe direct-agent tests
+│   └── testRealNumber.js / testRealEmail.js        # opt-in real-send tests
+├── render.yaml                 # Render Blueprint
 └── .env.example
 ```
 
-## Known limitations / next steps
+## Known limitations / trade-offs
 
-- `data/state.json` is a flat file, fine for a 51-hour demo; swap for the
-  team's shared DB/CRM so the control plane sees the same lead state.
-- The dummy CSV numbers are synthetic and not real phone numbers — replace
-  with your own verified number(s) before any live test (Twilio trial
-  accounts require verified destinations anyway).
-- No retry/backoff yet on DronaHQ or Twilio API failures — add before
-  relying on this for the live demo.
-- Campaign registry in `routes/campaigns.js` is a hardcoded stub; wire it to
-  the control plane's real campaign objects so pausing a campaign there
-  actually stops this service from contacting its leads.
+- **Voice calling is built and published in DronaHQ but not dialing for
+  real** — outbound calling requires linking a real Twilio/Plivo/SIP-trunk
+  phone number in DronaHQ's Call Configuration, which needs a paid telephony
+  account. The dispatch endpoint, orchestration, and per-call logging are
+  all real; only the last hop (an actual ringing phone) is gated behind that
+  paid step.
+- **"RAG" is keyword/bag-of-words retrieval**, not embeddings — a
+  deliberate, dependency-free stand-in documented as such in `src/knowledge/kb.js`,
+  not represented as a vector database.
+- **`data/state.json` is a flat JSON file**, fine for a buildathon demo;
+  swap for a real database before any production use, and note Render's
+  free tier resets it on every redeploy (handled today via auto-seeding).
+- **LinkedIn is deliberately not fully automated** — it produces an assisted
+  deep-link for a human to send, rather than driving a logged-in browser
+  session, to avoid LinkedIn ToS / account-ban risk.
+- **Apollo.io prospects are a frozen seed dataset** (20 real people across 3
+  ICPs), not a live search — the live search path exists in
+  `src/data/icpProspects.js` but is not wired to a paid Apollo API key in
+  this deployment, so the demo never depends on live API quota.
