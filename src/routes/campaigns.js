@@ -40,8 +40,13 @@ router.post("/:id/voice/start", async (req, res) => {
   const csvPath = req.body.csvPath || DEFAULT_CSV;
   const leads = loadLeadsFromCsv(csvPath).filter((l) => !req.body.campaign || l.campaign === req.body.campaign);
 
-  const result = await runVoiceCampaign(campaign.id, leads);
-  res.json({ campaign: campaign.id, dispatch: result });
+  try {
+    const result = await runVoiceCampaign(campaign.id, leads);
+    res.json({ campaign: campaign.id, dispatch: result });
+  } catch (err) {
+    console.error(`[campaigns] runVoiceCampaign failed: ${err.message}`);
+    res.status(502).json({ campaign: campaign.id, error: err.message });
+  }
 });
 
 router.get("/:id/status", (req, res) => {

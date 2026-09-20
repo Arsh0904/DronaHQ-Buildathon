@@ -14,16 +14,21 @@ async function dispatchVoiceCalls(phoneNumbers, metadata = {}) {
     console.log(`[MOCK][DronaHQ Voice] dispatch to=${JSON.stringify(phoneNumbers)} metadata=${JSON.stringify(metadata)}`);
     return { mock: true, batch_id: `MOCK-BATCH-${Date.now()}`, accepted: phoneNumbers.length };
   }
-  const { data } = await axios.post(
-    `${config.dronahq.apiHost}/voice/outbound/dispatch`,
-    {
-      agent_id: config.dronahq.voiceAgentId,
-      destination_phonenumber: phoneNumbers,
-      metadata,
-    },
-    { headers: { "api-key": config.dronahq.apiKey, "Content-Type": "application/json" } }
-  );
-  return { mock: false, ...data };
+  try {
+    const { data } = await axios.post(
+      `${config.dronahq.apiHost}/voice/outbound/dispatch`,
+      {
+        agent_id: config.dronahq.voiceAgentId,
+        destination_phonenumber: phoneNumbers,
+        metadata,
+      },
+      { headers: { "api-key": config.dronahq.apiKey, "Content-Type": "application/json" } }
+    );
+    return { mock: false, ...data };
+  } catch (err) {
+    const detail = err.response ? JSON.stringify(err.response.data) : err.message;
+    throw new Error(`DronaHQ voice dispatch failed: ${detail}`);
+  }
 }
 
 async function getDispatchStatus(batchId) {
@@ -62,12 +67,17 @@ async function invokeConversationAgent(payload) {
       lead_status: isReply ? "engaged" : "new",
     };
   }
-  const { data } = await axios.post(
-    config.dronahq.conversationWebhookUrl,
-    payload,
-    { headers: { "api-key": config.dronahq.conversationWebhookApiKey, "Content-Type": "application/json" } }
-  );
-  return { mock: false, ...data };
+  try {
+    const { data } = await axios.post(
+      config.dronahq.conversationWebhookUrl,
+      payload,
+      { headers: { "api-key": config.dronahq.conversationWebhookApiKey, "Content-Type": "application/json" } }
+    );
+    return { mock: false, ...data };
+  } catch (err) {
+    const detail = err.response ? JSON.stringify(err.response.data) : err.message;
+    throw new Error(`DronaHQ conversation webhook failed: ${detail}`);
+  }
 }
 
 module.exports = { dispatchVoiceCalls, getDispatchStatus, invokeConversationAgent };

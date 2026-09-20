@@ -27,12 +27,17 @@ async function sendViaGmail(to, subject, text) {
 async function sendViaResend(to, subject, text) {
   // eslint-disable-next-line global-require
   const axios = require("axios");
-  const resp = await axios.post(
-    config.email.resend.apiUrl,
-    { from: config.email.resend.from, to: [to], subject, text },
-    { headers: { Authorization: `Bearer ${config.email.resend.apiKey}` } }
-  );
-  return { mock: false, provider: "resend", id: resp.data.id, to, subject };
+  try {
+    const resp = await axios.post(
+      config.email.resend.apiUrl,
+      { from: config.email.resend.from, to: [to], subject, text },
+      { headers: { Authorization: `Bearer ${config.email.resend.apiKey}` } }
+    );
+    return { mock: false, provider: "resend", id: resp.data.id, to, subject };
+  } catch (err) {
+    const detail = err.response ? JSON.stringify(err.response.data) : err.message;
+    throw new Error(`Resend send failed: ${detail}`);
+  }
 }
 
 function sendMock(to, subject, text) {
