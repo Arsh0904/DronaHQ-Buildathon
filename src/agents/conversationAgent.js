@@ -13,15 +13,29 @@ async function startConversation(campaign, lead) {
     conversation_history: [],
   });
 
-  await sendSms(lead.phone, decision.message);
+  let smsResult = null;
+  let smsError = null;
+  try {
+    smsResult = await sendSms(lead.phone, decision.message);
+  } catch (err) {
+    smsError = err.message;
+    console.error(`[SMS] Failed to send opening message to ${lead.phone}: ${err.message}`);
+  }
 
   store.upsertLead(lead.phone, {
     ...lead,
     campaign_id: campaign.id,
-    sms_status: decision.lead_status || "contacted",
+    sms_status: smsError ? "sms_failed" : (decision.lead_status || "contacted"),
     conversation_history: [{ from: "agent", text: decision.message, ts: new Date().toISOString() }],
   });
-  store.logEvent({ type: "sms_opening_sent", phone: lead.phone, campaign_id: campaign.id, message: decision.message });
+  store.logEvent({
+    type: "sms_opening_sent",
+    phone: lead.phone,
+    campaign_id: campaign.id,
+    message: decision.message,
+    sms_error: smsError,
+    sms_result: smsResult,
+  });
 
   return decision;
 }
@@ -42,7 +56,11 @@ async function handleIncomingReply(fromPhone, text) {
   });
 
   if (decision.action === "send" && decision.message) {
-    await sendSms(fromPhone, decision.message);
+    try {
+      await sendSms(fromPhone, decision.message);
+    } catch (err) {
+      console.error(`[SMS] Failed to send reply to ${fromPhone}: ${err.message}`);
+    }
     history.push({ from: "agent", text: decision.message, ts: new Date().toISOString() });
   }
 

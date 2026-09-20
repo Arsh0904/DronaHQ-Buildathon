@@ -23,9 +23,14 @@ router.post("/:id/sms/start", async (req, res) => {
 
   const results = [];
   for (const lead of leads) {
-    // eslint-disable-next-line no-await-in-loop
-    const decision = await startConversation(campaign, lead);
-    results.push({ phone: lead.phone, decision });
+    try {
+      // eslint-disable-next-line no-await-in-loop
+      const decision = await startConversation(campaign, lead);
+      results.push({ phone: lead.phone, ok: true, decision });
+    } catch (err) {
+      console.error(`[campaigns] startConversation failed for ${lead.phone}: ${err.message}`);
+      results.push({ phone: lead.phone, ok: false, error: err.message });
+    }
   }
   res.json({ campaign: campaign.id, sent: results.length, results });
 });

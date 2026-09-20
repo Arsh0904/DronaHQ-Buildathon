@@ -7,6 +7,16 @@ const webhooksRouter = require("./routes/webhooks");
 const icpsRouter = require("./routes/icps");
 
 const app = express();
+
+// Defense-in-depth: never let one bad outbound call (SMS/voice/email/webhook)
+// take down the whole demo. Log and keep serving.
+process.on("uncaughtException", (err) => {
+  console.error("[uncaughtException] keeping process alive:", err);
+});
+process.on("unhandledRejection", (err) => {
+  console.error("[unhandledRejection] keeping process alive:", err);
+});
+
 app.use(morgan("dev"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false })); // Twilio posts form-encoded
