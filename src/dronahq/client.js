@@ -73,11 +73,52 @@ async function invokeConversationAgent(payload) {
       payload,
       { headers: { "api-key": config.dronahq.conversationWebhookApiKey, "Content-Type": "application/json" } }
     );
-    return { mock: false, ...data };
+    return { mock: false, ...data, ...extractStructuredDecision(data) };
   } catch (err) {
     const detail = err.response ? JSON.stringify(err.response.data) : err.message;
     throw new Error(`DronaHQ conversation webhook failed: ${detail}`);
   }
+}
+
+/**
+ * DronaHQ's webhook-trigger "Standard" response wraps the agent's actual
+ * answer in an execution envelope ({ success, thread_id, run_id, message:
+ * "Agent run completed successfully...", response: "<free text, often with
+ * a ```json fenced block inside>" }) rather than returning our requested
+ * { message, action, reason, lead_status } schema directly at the top
+ * level. If the real fields are already top-level (schema respected
+ * exactly), this is a no-op; otherwise it digs the JSON out of `response`
+ * (or `message`) so callers can rely on decision.message/action/etc.
+ */
+function extractStructuredDecision(data) {
+  if (data && typeof data.action === "string" && typeof data.message === "string" && data.message !== "Agent run completed successfully. See 'response' for execution output.") {
+    return {};
+  }
+  const raw = (data && (data.response || data.message)) || "";
+  if (typeof raw !== "string") return {};
+
+  const fenceMatch = raw.match(/```(?:json)?\s*([\s\S]*?)```/i);
+  const candidate = fenceMatch ? fenceMatch[1] : raw;
+  try {
+    const parsed = JSON.parse(candidate.trim());
+    if (parsed && typeof parsed === "object") {
+      return {
+        message: parsed.message || raw,
+        action: parsed.action,
+        reason: parsed.reason,
+        lead_status: parsed.lead_status,
+      };
+    }
+  } catch (err) {
+    // Not JSON (or not cleanly fenced) - fall through to raw text below.
+  }
+  // No parseable JSON found: treat the whole free-text response as the
+  // message so at least something sensible gets sent, defaulting to a
+  // safe non-destructive action.
+  if (raw && raw !== "Agent run completed successfully. See \'response\' for execution output.") {
+    return { message: raw, action: "send" };
+  }
+  return {};
 }
 
 module.exports = { dispatchVoiceCalls, getDispatchStatus, invokeConversationAgent };
