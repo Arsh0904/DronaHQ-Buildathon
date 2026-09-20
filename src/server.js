@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 const morgan = require("morgan");
@@ -5,6 +6,7 @@ const config = require("./config");
 const campaignsRouter = require("./routes/campaigns");
 const webhooksRouter = require("./routes/webhooks");
 const icpsRouter = require("./routes/icps");
+const controlRouter = require("./routes/control");
 
 const app = express();
 
@@ -21,7 +23,11 @@ app.use(morgan("dev"));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false })); // Twilio posts form-encoded
 
-app.get("/", (req, res) => {
+// The control-plane dashboard is the actual product surface for judges —
+// serve it at "/" instead of a bare JSON health check.
+app.use(express.static(path.join(__dirname, "..", "public")));
+
+app.get("/api/health", (req, res) => {
   res.json({
     service: "sdr-voice-sms-agent",
     twilio_live: config.twilio.isLive,
@@ -33,6 +39,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/campaigns", campaignsRouter);
 app.use("/api/icps", icpsRouter);
+app.use("/api/control", controlRouter);
 app.use("/webhooks", webhooksRouter);
 
 app.listen(config.port, () => {

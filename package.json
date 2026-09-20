@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "node --watch src/server.js",
-    "seed": "node scripts/seedLeads.js",
+    "seed": "node scripts/seed.js",
     "test:sms": "node scripts/testSms.js",
     "test:voice": "node scripts/testVoice.js",
     "test:email": "node scripts/testEmail.js"
