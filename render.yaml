@@ -1,0 +1,38 @@
+services:
+  - type: web
+    name: sdr-buildathon
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: SMS_PROVIDER
+        value: textbelt
+      - key: TEXTBELT_API_KEY
+        value: textbelt
+      - key: EMAIL_PROVIDER
+        sync: false
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM
+        value: onboarding@resend.dev
+      - key: APOLLO_API_KEY
+        sync: false
+      - key: TWILIO_ACCOUNT_SID
+        sync: false
+      - key: TWILIO_AUTH_TOKEN
+        sync: false
+      - key: TWILIO_SMS_FROM_NUMBER
+        sync: false
+      - key: DRONAHQ_API_KEY
+        sync: false
+      - key: DRONAHQ_API_HOST
+        sync: false
+      - key: DRONAHQ_VOICE_AGENT_ID
+        sync: false
+      - key: DRONAHQ_CONVERSATION_WEBHOOK_URL
+        sync: false
+      - key: DRONAHQ_CONVERSATION_WEBHOOK_API_KEY
+        sync: false
