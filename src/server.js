@@ -7,6 +7,7 @@ const campaignsRouter = require("./routes/campaigns");
 const webhooksRouter = require("./routes/webhooks");
 const icpsRouter = require("./routes/icps");
 const controlRouter = require("./routes/control");
+const { seedIfEmpty } = require("./bootstrap/seedDemoData");
 
 const app = express();
 
@@ -42,12 +43,16 @@ app.use("/api/icps", icpsRouter);
 app.use("/api/control", controlRouter);
 app.use("/webhooks", webhooksRouter);
 
-app.listen(config.port, () => {
-  console.log(`sdr-voice-sms-agent listening on http://localhost:${config.port}`);
-  console.log(`Twilio live: ${config.twilio.isLive}`);
-  console.log(`DronaHQ voice live: ${config.dronahq.voiceIsLive}`);
-  console.log(`DronaHQ conversation live: ${config.dronahq.conversationIsLive}`);
-  if (!config.twilio.isLive || !config.dronahq.voiceIsLive || !config.dronahq.conversationIsLive) {
-    console.log("Running in MOCK MODE for any unconfigured integration above - safe to test end-to-end.");
-  }
-});
+seedIfEmpty()
+  .catch((err) => console.error("[seed] auto-seed on boot failed (server will still start):", err))
+  .finally(() => {
+    app.listen(config.port, () => {
+      console.log(`sdr-voice-sms-agent listening on http://localhost:${config.port}`);
+      console.log(`Twilio live: ${config.twilio.isLive}`);
+      console.log(`DronaHQ voice live: ${config.dronahq.voiceIsLive}`);
+      console.log(`DronaHQ conversation live: ${config.dronahq.conversationIsLive}`);
+      if (!config.twilio.isLive || !config.dronahq.voiceIsLive || !config.dronahq.conversationIsLive) {
+        console.log("Running in MOCK MODE for any unconfigured integration above - safe to test end-to-end.");
+      }
+    });
+  });
