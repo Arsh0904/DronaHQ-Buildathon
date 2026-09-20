@@ -482,9 +482,11 @@ async function renderActivityTab(body, c) {
     .join("");
 }
 
-function renderPromptsTab(body, c) {
-  const scopes = [{ key: "system", label: "Campaign system prompt", versions: c.prompts.system }].concat(
-    AGENT_KEYS.map((k) => ({ key: k, label: AGENT_LABELS[k], versions: c.prompts.agents[k] }))
+async function renderPromptsTab(body, c) {
+  body.innerHTML = "<p>Loading…</p>";
+  const prompts = await api(`/campaigns/${c._id}/prompts`);
+  const scopes = [{ key: "system", label: "Campaign system prompt", versions: prompts.system }].concat(
+    AGENT_KEYS.map((k) => ({ key: k, label: AGENT_LABELS[k], versions: prompts.agents[k] }))
   );
   body.innerHTML = scopes
     .map(
