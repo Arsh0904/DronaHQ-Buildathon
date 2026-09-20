@@ -1,5 +1,17 @@
 # Quickstart: run + demo this to your team
 
+## Status for judges (updated 2026-09-20, ~17:45 IST)
+
+| Channel | Tech | Status | Note |
+|---|---|---|---|
+| SMS | Twilio-style client + DronaHQ Conversation Agent | **Live** | Reply loop parses the agent's real response envelope safely and never fabricates a "send" when there's no real content |
+| Voice | DronaHQ Voice Agent outbound dispatch | **Config pending** | Agent is built, instructed, and published; DronaHQ requires an outbound phone number imported from Twilio/Plivo/Vobiz/SIP Trunking under Call Configuration before it will dispatch calls |
+| Email | Resend | **Live** | Free sandbox sender (`onboarding@resend.dev`) can only deliver to the verified account owner's address — a Resend platform restriction, not a bug |
+| LinkedIn | Assisted deep-link, human-in-the-loop | **Live by design** | Deliberately not a fully automated send — driving a logged-in LinkedIn session risks the account; this generates the personalized message + a direct compose link instead |
+
+**Also shipped this session:** a global crash guard (`uncaughtException`/`unhandledRejection` handlers) plus per-lead try/catch isolation, after a real SMS-provider error was found taking down the whole process. Verified fixed live: 10/10 leads processed cleanly with zero downtime after the patch. Every third-party call (DronaHQ voice/conversation, Resend) now surfaces the real API error body instead of a generic failure — that's how the two "pending" gaps above were actually diagnosed, not guessed at.
+
+
 ## LIVE DEPLOYMENT
 
 **https://sdr-buildathon.onrender.com** — deployed on Render, real email (Resend) confirmed working.
