@@ -1,5 +1,10 @@
 # Quickstart: run + demo this to your team
 
+## LIVE DEPLOYMENT
+
+**https://sdr-buildathon.onrender.com** — deployed on Render, real email (Resend) confirmed working.
+Note: free-tier instance spins down after inactivity; first request after idle can take ~50s.
+
 Verified working end-to-end on 2026-09-20 (all 4 outreach channels + the
 ICP data layer, running fully in free/mock-safe mode, no paid accounts).
 
